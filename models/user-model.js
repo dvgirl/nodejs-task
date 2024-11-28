@@ -3,15 +3,15 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
 const userSchema = new mongoose.Schema({
-    firstName: {
+    name: {
         type: String,
-    },
-    lastName: {
-        type: String
+        required: true,
+        minlength: 3,
     },
     email: {
         type: String,
         required: true,
+        match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address'],
         unique: true,
     },
     token: {
@@ -26,11 +26,7 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    profilePic:{
-        type:String,
-        default:null
-    },
-    Status:{
+    status:{
         type:String,
         default:"active"
     },
@@ -39,7 +35,8 @@ const userSchema = new mongoose.Schema({
     },
     phone:{
         type:Number,
-        default:null 
+        default:null ,
+        match: [/^\d{10}$/, 'Phone number must be 10 digits'],
     }
 }, {
     timestamps: true,

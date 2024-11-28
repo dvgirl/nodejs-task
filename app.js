@@ -12,8 +12,16 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!')
 })
 
-const userRoute = require('./routes/user-route')
-app.use('/' , userRoute)
+const userRoute = require('./routes/auth-route')
+app.use('/api/auth/' , userRoute)
+
+const superAdminRoute = require('./routes/superadmin-route')
+app.use('/api/superadmin/' , superAdminRoute)
+
+const ProductRoute = require('./routes/product-route')
+app.use('/api/admin/' , ProductRoute)
+
+
 
 app.listen(process.env.PORT, () => {
     console.log(`app is running on port ${process.env.PORT}`);

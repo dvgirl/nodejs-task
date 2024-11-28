@@ -11,7 +11,7 @@ const verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.SECRATEKEY);
     req.user = decoded;
     req.body.user = decoded;
-    const isadmin = await User.find({ email: req.user.email });
+    const isadmin = await User.findOne({ _id : req.user._id});
     if (isadmin.role == 0 || isadmin.role == "0") {
       return res.status(401).json(err);
     }

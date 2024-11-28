@@ -1,34 +1,38 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");    
-const User = require("../models/user-model");
+const express = require("express");   
+const Product = require("../models/product-model");
+const fs = require('fs');
+const path = require('path');
 
-exports.register = async (req, res) => {
-    try {
-      const data = new User({
-        ...req.body,
-        profilePic: req.file ? req.file.filename : null
-    })
-      await data.generateAuthToken();
-      await data.save();
-      res.json({ message: 'OK', data: "register suceesfull" })
-    } catch (err) {
-      res.status(500).json({ message: 'OK', data: err })
+
+exports.ProductList = async (req , res)=> {
+    try{
+        const { name , minPrice , maxPrice , discount} = req.query;
+        const obj = {}   
+        if (name) {
+            obj.name = { $regex: name, $options: 'i' };
+        }   
+        const priceConditions = [];
+        if (minPrice) {
+            priceConditions.push({ price: { $gte: Number(minPrice) } });
+        }
+        if (maxPrice) {
+            priceConditions.push({ price: { $lte: Number(maxPrice) } });
+        } 
+        if (priceConditions.length > 0) {
+            obj.$and = priceConditions;
+        }
+        if (discount) {
+            obj.discount = Number(discount);
+        }
+        if (name) {
+            obj.name = name;
+        }
+        console.log(obj)
+        const productList = await Product.find(obj);
+        res.json({ message: 'OK', data: productList})
     }
-}
-exports.login = async (req, res) => {
-    try {
-      const password = req.body.password;
-      const email = req.body.email;
-  
-      const admindata = await User.findOne({ email: email });
-      const ismatch = await bcrypt.compare(password, admindata.password);
-      if (ismatch && admindata) {
-        return res.json({ message: "OK", data: admindata });
-      } else {
-        return res.status(400).json("invalid user");
-      }
-    } catch (err) {
-      console.log(err);
-      res.status(500).json(err);
+    catch(err){
+        console.log(err)
+        res.status(500).json({ message: err })
     }
-};
+} 
