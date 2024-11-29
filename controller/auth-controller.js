@@ -40,7 +40,7 @@ exports.login = async (req, res) => {
       if(admindata){
       const ismatch = await bcrypt.compare(password, admindata.password);
       if (ismatch && admindata) {
-        return res.json({ message: "OK", data: userdata });
+        return res.json({ message: "OK", data: admindata });
       } else {
         return res.status(400).json("invalid userdata");
       }
