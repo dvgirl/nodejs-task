@@ -40,8 +40,6 @@ exports.login = async (req, res) => {
       if(admindata){
       const ismatch = await bcrypt.compare(password, admindata.password);
       if (ismatch && admindata) {
-        const token = jwt.sign({ id: admindata._id, email: admindata.email }, process.env.SECRATEKEY, {expiresIn: '1d'});
-        const userdata = await User.findOneAndUpdate({_id : admindata._id }, {$set : {token : token}} ,{new : true})
         return res.json({ message: "OK", data: userdata });
       } else {
         return res.status(400).json("invalid userdata");
