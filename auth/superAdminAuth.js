@@ -10,7 +10,6 @@ const verifysuperAdminToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.SECRATEKEY);
     req.user = decoded;
-    req.body.user = decoded;
     const isadmin = await User.findOne({ _id: req.user._id });
     if (isadmin.role != 2) {
       return res.status(401).json(err);

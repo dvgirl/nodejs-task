@@ -18,11 +18,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage })
 router.post('/items',superAdminAuth , upload.single('image') ,userController.addProduct);
-router.get('/items',superAdminAuth , upload.single('image') ,userController.ProductList);
+router.get('/items',superAdminAuth  ,userController.ProductList);
 router.put('/items/:id',superAdminAuth , upload.single('image') ,userController.updateProduct);
-router.delete('/items/:id',superAdminAuth , upload.single('image') ,userController.deleteProduct);
-
-router.delete('/items/ratings',superAdminAuth ,userController.deleteProduct);
-
+router.delete('/items/:id',superAdminAuth ,userController.deleteProduct);
 
 module.exports = router

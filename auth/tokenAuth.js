@@ -1,39 +1,26 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
+const { env } = require("process");
+const User = require("../models/user-model");
 
-const generateAccessToken = (user) => {
-    return jwt.sign(
-        { id: user._id, email: user.email, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: '15m' }
-    );
-};
-
-const generateRefreshToken = (user) => {
-    return jwt.sign(
-        { id: user._id },
-        process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: '7d' } 
-    );
-};
-
-const refreshToken = async (req, res) => {
-    const { token } = req.body;
+const checkToken = async (req, res, next) => {
+    const token = req.headers["x-access-token"] || req.headers["token"] || req.headers.token;
     if (!token) {
-        return res.status(401).json({ message: "Refresh token is required." });
+      return res.status(403).json({ status: 403 });
     }
-
     try {
-        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-        const user = await User.findById(decoded.id);
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
+        const decoded = jwt.verify(token, process.env.SECRATEKEY);
+        req.user = decoded;
+        next();
+      } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+          const payload = jwt.decode(token);
+          const newToken = jwt.sign({ id: payload.id, email: payload.email },process.env.SECRATEKEY,{ expiresIn: '1h' });
+          res.setHeader('token', newToken);
+          await User.findOneAndUpdate({_id : req.user._id }, {$set : {token : newToken}})
+          return res.status(401).json({ message: 'Token expired. A new token has been issued.', token: newToken });
         }
+        return res.status(401).json({ message: 'Invalid token.' });
+      }
+}
 
-        const accessToken = generateAccessToken(user);
-        res.json({ accessToken });
-    } catch (err) {
-        res.status(403).json({ message: "Invalid or expired refresh token." });
-    }
-};
-
-module.exports = { generateAccessToken, generateRefreshToken, refreshToken };
+module.exports = checkToken

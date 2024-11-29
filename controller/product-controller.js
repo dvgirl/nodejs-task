@@ -2,26 +2,34 @@ const express = require("express");
 const Product = require("../models/product-model");
 const fs = require('fs');
 const path = require('path');
+const Joi = require('joi');
 
-
+const mySchema = Joi.object({
+    name: Joi.string().min(3).required(),
+    price: Joi.number().min(0).required(),
+    discount: Joi.number().min(0).max(100).required(),
+    description:Joi.string().required()
+});
 exports.addProduct = async (req , res)=> {
     try{
         const { price, discount} = req.body;
-        if (!price || price < 0) {
-            return res.json({ message: "price not less then 0" });
+        
+        const { error } = mySchema.validate(req.body);
+        if (error) {
+            console.log(error)
+          return res.status(400).json(error.message);
         }
-        if (discount < 0 || discount > 100) {
-            return res.json({ message: "discount must be between 0 to 100" });
-        } 
+        else {
         let totalPrice = price - (price * (discount / 100));
         const productData = new Product({
             ...req.body,
-            image: req.file.filename,
+            image: req.file ? req.file.filename : null,
             totalPrice:totalPrice,
             createdBy: req.user._id,
         });
         const newProduct = await productData.save();
         res.status(201).json({ message: "OK",data: newProduct });
+    }
     }
     catch(err){
         console.log(err)
@@ -31,7 +39,7 @@ exports.addProduct = async (req , res)=> {
 
 exports.ProductList = async (req , res)=> {
     try{
-        const { name , minPrice , maxPrice , discount} = req.query;
+        const { name , minPrice , maxPrice , discount ,page = 1, limit = 10} = req.query;
         const obj = {}   
         if (name) {
             obj.name = { $regex: name, $options: 'i' };
@@ -49,9 +57,17 @@ exports.ProductList = async (req , res)=> {
         if (discount) {
             obj.discount = Number(discount);
         }
-        console.log(obj)
-        const productList = await Product.find(obj);
-        res.json({ message: 'OK', data: productList})
+        const skip = (page - 1) * limit;
+        const totalItems = await Product.countDocuments(obj);
+        const productList = await Product.find(obj).skip(skip).limit(limit);;
+        res.json({ message: 'OK', 
+            result: {
+            totalItems,
+            totalPages: Math.ceil(totalItems / limit),
+            currentPage: page,
+            limit,
+          },
+          data: productList})
     }
     catch(err){
         console.log(err)
@@ -108,55 +124,4 @@ exports.deleteProduct = async ( req , res)=> {
     } 
 }
 
-exports.getItemRatings = async (req, res) => {
-    try {
-        const { itemId, minRating, maxRating, page = 1, limit = 10 } = req.query;
-
-        const query = {};
-        if (itemId) {
-            query.itemId = itemId;
-        }
-        if (minRating || maxRating) {
-            query.rating = {};
-            if (minRating) query.rating.$gte = Number(minRating);
-            if (maxRating) query.rating.$lte = Number(maxRating);
-        }
-
-
-        const skip = (Number(page) - 1) * Number(limit);
-
-        const ratings = await Rating.find(query)
-            .skip(skip)
-            .limit(Number(limit))
-            .populate('itemId', 'name') 
-            .sort({ createdAt: -1 }); 
-
-        const ratingStats = await Rating.aggregate([
-            { $match: query },
-            {
-                $group: {
-                    _id: '$itemId',
-                    averageRating: { $avg: '$rating' },
-                    totalRatings: { $sum: 1 },
-                    highestRating: { $max: '$rating' },
-                    lowestRating: { $min: '$rating' },
-                },
-            },
-        ]);
-
-        res.status(200).json({
-            message: 'Ratings retrieved successfully.',
-            data: {
-                ratings,
-                statistics: ratingStats,
-            },
-            pagination: {
-                currentPage: Number(page),
-                totalPages: Math.ceil(await Rating.countDocuments(query) / limit),
-            },
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Internal server error.', error: err.message });
-    }
-};  
+  

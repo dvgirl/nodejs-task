@@ -12,14 +12,17 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!')
 })
 
-const userRoute = require('./routes/auth-route')
-app.use('/api/auth/' , userRoute)
+const authRoute = require('./routes/auth-route')
+app.use('/api/auth/' , authRoute)
 
 const superAdminRoute = require('./routes/superadmin-route')
 app.use('/api/superadmin/' , superAdminRoute)
 
 const ProductRoute = require('./routes/product-route')
 app.use('/api/admin/' , ProductRoute)
+
+const userRoute = require('./routes/user-route')
+app.use('/api/user/' , userRoute)
 
 
 
