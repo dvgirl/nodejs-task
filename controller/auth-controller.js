@@ -25,6 +25,7 @@ exports.register = async (req, res) => {
     }
     else {
       const data = new User(req.body)
+      await data.generateAuthToken();
       const newuser = await data.save();
       res.json({ message: 'OK', data: newuser})
     }
